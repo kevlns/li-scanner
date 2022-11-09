@@ -7,7 +7,7 @@
 - win32  
 - python3.6  
 - pyqt5  
-- conda  
+- miniconda（这个按照自己机器的配置安装，不一定用32位的）  
 
 开发文档：  
   

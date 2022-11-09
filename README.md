@@ -8,3 +8,11 @@
 - python3.6  
 - pyqt5  
 - conda  
+
+开发文档：  
+  
+【金山文档】 答题卡扫描流程图  
+https://kdocs.cn/l/cmpM2ZOSXb7s  
+
+【金山文档】 模块设计  
+https://kdocs.cn/l/ccyhPME9kJM2  

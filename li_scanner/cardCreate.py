@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import xlwings as xw
+
 # 一页包含的行数和列数
 columnNum = 26
 rowNum = 62
@@ -8,8 +9,8 @@ pageBeginNum = [1, 63]
 
 
 class CardCreate:
-    def __init__(self, idDigits: int, selNumberList: list, fillNumberList: list, subNumberList: list,
-                 subChNumberList: list,cardTitle:str,warnMsg:str):
+    def __init__(self, idDigits: int, selNumberList: list, optNumOfSelQList: list,
+                 fillNumberList: list, subNumberList: list, subChNumberList: list, cardTitle: str, warnMsg: str):
         # 选择题和填空题的分割位置
         self.partition1 = 0
         # 填空题和大题分割位置
@@ -18,6 +19,8 @@ class CardCreate:
         self.idDigits = idDigits
         # 选择题题号
         self.selNumberList = selNumberList
+        # 选择题选项个数
+        self.optNumOfSelQList = optNumOfSelQList
         # 填空题题号
         self.fillNumberList = fillNumberList
         # 大题题号
@@ -66,7 +69,6 @@ class CardCreate:
         self.sht.range(1, 1).value = '█'
         self.sht.range(1, 1).api.Font.Size = 48
         self.sht.range(1, 1).api.HorizontalAlignment = -4108  # -4108 水平居中。 -4131 靠左，-4152 靠右
-        print(2)
         self.sht.range(1, columnNum - 1).value = '█'
         self.sht.range(1, columnNum - 1).api.Font.Size = 48
         self.sht.range(1, columnNum - 1).api.HorizontalAlignment = -4108  # -4108 水平居中。 -4131 靠左，-4152 靠右
@@ -101,9 +103,9 @@ class CardCreate:
     # 画小定位点函数
     def drawSmallDot(self):
         # 水平点
-        self.sht.range((2, 3), (2, 22)).value = '▃'
-        self.sht.range((2, 3), (2, 22)).api.Font.Size = 14
-        self.sht.range((2, 3), (2, 22)).api.HorizontalAlignment = -4108
+        self.sht.range((2, 3), (2, columnNum - 2)).value = '▃'
+        self.sht.range((2, 3), (2, columnNum - 2)).api.Font.Size = 14
+        self.sht.range((2, 3), (2, columnNum - 2)).api.HorizontalAlignment = -4108
         # 垂直点
         self.sht.range((3, 2), (13, 2)).value = '▍'
         self.sht.range((3, 2), (13, 2)).api.Font.Size = 10
@@ -111,54 +113,74 @@ class CardCreate:
 
     # 填充选择题函数
     def fillSelQuestion(self):
+        # 选择题开始行数
         selBeginRow = 16
-        # 客观题总数
-        objCount = len(self.selNumberList)
-        # 客观题块数
-        objBlocks = int(objCount / 5)
-        if objCount % 5 != 0:
-            objBlocks = objBlocks + 1
+        # 选择题开始列数
+        selBeginCol = 3
         # 设置字体和居右
         self.sht.range((selBeginRow, 3), (rowNum - 2, columnNum - 2)).api.Font.Size = 7
         self.sht.range((selBeginRow, 3), (rowNum - 2, columnNum - 2)).api.HorizontalAlignment = -4152
-        # 填充内容
-        fillContent = ['', '[ A ]', '[ B ]', '[ C ]', '[ D ]']
-        # 填充客观题
-        offset = 0
-        k = 0
-        # 整行的
-        for i in range(int(objBlocks / 4)):
-            for j in range(4):
-                for l in range(5):
-                    fillContent[0] = self.selNumberList[k]
-                    self.sht.range((i + selBeginRow + offset + l, j * 5 + 3),
-                                   (i + selBeginRow + offset + l, j * 5 + 3 + 5)).value = fillContent
-                    # 垂直点
-                    self.sht.range(i + selBeginRow + offset + l, 2).value = '▍'
-                    self.sht.range(i + selBeginRow + offset + l, 2).api.Font.Size = 10
-                    self.sht.range(i + selBeginRow + offset + l, 2).api.HorizontalAlignment = -4108
-                    k = k + 1
-            offset = offset + 5
-        self.partition1 = int(objBlocks / 4) + offset + 16
-        # 不整行或不整块
-        for j in range(objBlocks % 4):
-            for l in range(5):
-                fillContent[0] = self.selNumberList[k]
-                k = k + 1
-                self.sht.range((int(objBlocks / 4) + selBeginRow + offset + l, j * 5 + 3),
-                               (int(objBlocks / 4) + selBeginRow + offset + l, j * 5 + 3 + 5)).value = fillContent
-                # 垂直点
-                self.sht.range(int(objBlocks / 4) + selBeginRow + offset + l, 2).value = '▍'
-                self.sht.range(int(objBlocks / 4) + selBeginRow + offset + l, 2).api.Font.Size = 11
-                self.sht.range(int(objBlocks / 4) + selBeginRow + offset + l, 2).api.HorizontalAlignment = -4108
-                if k >= objCount:
-                    self.partition1 = int(objBlocks / 4) + selBeginRow + offset + 7
-                    print(self.partition1)
-                    break
+        # 行指针
+        rowPtr = selBeginRow
+        # 列指针
+        colPtr = selBeginCol
+        # 水平偏移
+        colOffset = 0
+        # 分割线集合
+        VerDivLine = set()
+        # 遍历选择题号
+        for i in range(len(self.selNumberList)):
+            if rowPtr < selBeginRow + 5:
+                # 记录第一行分割线
+                VerDivLine.add(colPtr)
+            else:
+                if not (colPtr in VerDivLine):
+                    flag = 1
+                    # 找到比现在colPtr大的第一个分割线实现对齐
+                    for m in VerDivLine:
+                        if colPtr <= m and flag == 1:
+                            colPtr = m
+                            flag = 0
+                    # 如果没有比colPtr大的分割线，直接跳到下一行
+                    if flag == 1:
+                        colPtr = selBeginCol
+                        rowPtr = rowPtr + 6
+            # 填充题号
+            # print('rowPtr: ', rowPtr, 'colPtr: ', colPtr, 'i: ', i)
+            self.sht.range(rowPtr, colPtr).value = self.selNumberList[i]
+            # 垂直点
+            self.sht.range(rowPtr, 2).value = '▍'
+            self.sht.range(rowPtr, 2).api.Font.Size = 10
+            self.sht.range(rowPtr, 2).api.HorizontalAlignment = -4108
+            # print('row: ', rowPtr, 'col: ', colPtr)
+            # 填充选项
+            for j in range(self.optNumOfSelQList[i]):
+                self.sht.range(rowPtr, colPtr + j + 1).value = '[ ' + str(chr(ord('A') + j)) + ' ]'
+            rowPtr = rowPtr + 1
+            if (i + 1) % 5 == 0 and i < len(self.selNumberList) - 5:
+                preColOffset = 0
+                for k in range(5):
+                    # 之后五个题的最长长度
+                    if self.optNumOfSelQList[i + k] > colOffset:
+                        colOffset = self.optNumOfSelQList[i + k]
+                    # 之前五个题的最长长度
+                    if self.optNumOfSelQList[i - k] > preColOffset:
+                        preColOffset = self.optNumOfSelQList[i - k]
+                # 如果超过截止范围,换下一行
+                if colPtr + colOffset + preColOffset > columnNum - 3:
+                    colPtr = selBeginCol
+                    rowPtr = rowPtr + 1
+                # 没超过就继续在水平延申
+                else:
+                    rowPtr = rowPtr - 5
+                    colPtr = colPtr + preColOffset + 1
+                # print('colOffset: ', colOffset)
+                colOffset = 0
+        self.partition1 = rowPtr + 1
 
     # 填充填空题
     def fillFillQuestion(self):
-        # print(self.partition1)
+        print('partition1 :', self.partition1)
         # 文字
         self.sht.range((self.partition1, 4), (self.partition1, 5)).api.Merge()
         self.sht.range((self.partition1, 4)).value = '填空题'
@@ -279,7 +301,7 @@ class CardCreate:
         self.sht.range((10, 5), (11, 6)).api.Merge()
         self.sht.range((10, 5)).value = '▃'
         self.sht.range(10, 5).api.Font.Size = 11
-        self.sht.range(10,5).api.HorizontalAlignment = -4108
+        self.sht.range(10, 5).api.HorizontalAlignment = -4108
 
         self.sht.range((12, 5), (14, 6)).api.Merge()
         self.sht.range((12, 5)).value = '[√ ]\n[ × ]'
@@ -318,7 +340,6 @@ class CardCreate:
             else:
                 for j in range(1, self.subChNumberList[i] + 1):
                     fillContent.append(str(str(self.subNumberList[i]) + '(' + str(j) + ')'))
-        print(fillContent)
         # 第一页
         curIdx = 0
         idx = 0

@@ -41,7 +41,7 @@ class CardDesign(QWidget):
         self.leftBottom.setObjectName("leftBottom")
         # 右
         self.right = QtWidgets.QFrame(self)
-        self.right.setGeometry(QtCore.QRect(430, 10, 250, 600))
+        self.right.setGeometry(QtCore.QRect(430, 10, 300, 800))
         self.right.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.right.setFrameShadow(QtWidgets.QFrame.Raised)
         self.right.setObjectName("right")
@@ -131,7 +131,7 @@ class CardDesign(QWidget):
         self.objDelete.clicked.connect(lambda: delOneHeader(self.preForm))
         self.enterObjectiveDesign.clicked.connect(self.createObjectiveDesignForm)
 
-        self.preForm.setGeometry(QtCore.QRect(10, 90, 240, 600))
+        self.preForm.setGeometry(QtCore.QRect(10, 90, 270, 600))
         self.preForm.setObjectName("objForm")
         # 设置题目表格
         self.preForm.setColumnCount(3)
@@ -196,6 +196,7 @@ class CardDesign(QWidget):
 
     def createQuestionCard(self):
         selNumberList = []
+        optNumOfSelQList = []
         fillNumberList = []
         subNumberList = []
         subChNumberList = []
@@ -205,10 +206,11 @@ class CardDesign(QWidget):
             num = str(self.preForm.item(i + 1, 1).text())
             if num == '选择':
                 selNumberList.append(int(self.preForm.item(i + 1, 0).text()))
+                optNumOfSelQList.append(int(self.preForm.item(i + 1, 2).text()))
             if num == '填空':
                 fillNumberList.append(int(self.preForm.item(i + 1, 0).text()))
             if num == '大题':
                 subNumberList.append(int(self.preForm.item(i + 1, 0).text()))
                 subChNumberList.append(int(self.preForm.item(i + 1, 2).text()))
         idDigits = self.idDigits.value()
-        CardCreate(idDigits, selNumberList, fillNumberList, subNumberList, subChNumberList,title,warnMsg)
+        CardCreate(idDigits, selNumberList, optNumOfSelQList,fillNumberList, subNumberList, subChNumberList,title,warnMsg)

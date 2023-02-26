@@ -14,9 +14,9 @@ stuID = getStuID(totalCard, 8)
 print('学号: ', stuID)
 
 optNumOfSelQList = []
-f = open("../doc/optNumOfSelQList", "r")
+f = open("../doc/optNumOfSelQList.txt", "r")
 lines = f.readlines()
-cors = []
+
 for i in range(len(lines)):
     optNumOfSelQList.append(int(lines[i].strip('\n')))
 

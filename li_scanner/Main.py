@@ -1,6 +1,6 @@
 import sys
 from PyQt5 import QtWidgets
-from li_scanner.CardDesign import CardDesign
+from li_scanner.cardDesignModlue.CardDesign import CardDesign
 
 app = QtWidgets.QApplication(sys.argv)
 ui = CardDesign()

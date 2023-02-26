@@ -305,7 +305,7 @@ def getAnswers(img, optNumOfSelQList):
     ret, th2 = cv.threshold(blur1, 100, 255, cv.THRESH_BINARY_INV)
     blur2 = cv.blur(th2, (5, 5))
 
-    f = open("data1.txt", "r")
+    f = open("../test/data1.txt", "r")
     lines = f.readlines()
     cors = []
     for i in range(len(lines)):

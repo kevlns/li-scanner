@@ -2,8 +2,8 @@
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QTableWidgetItem
 
-from li_scanner.addQuestions import ObjectiveQuestions
-from li_scanner.cardCreate import CardCreate
+from li_scanner.cardDesignModlue.addQuestions import ObjectiveQuestions
+from li_scanner.cardDesignModlue.cardCreate import CardCreate
 
 
 def insertQuestionsMessage(form: QtWidgets.QTableWidget):
@@ -195,6 +195,7 @@ class CardDesign(QWidget):
         self.label_6.setText(_translate("Form", "考试提醒信息"))
 
     def createQuestionCard(self):
+
         selNumberList = []
         optNumOfSelQList = []
         fillNumberList = []
@@ -214,3 +215,4 @@ class CardDesign(QWidget):
                 subChNumberList.append(int(self.preForm.item(i + 1, 2).text()))
         idDigits = self.idDigits.value()
         CardCreate(idDigits, selNumberList, optNumOfSelQList,fillNumberList, subNumberList, subChNumberList,title,warnMsg)
+        print('执行1')

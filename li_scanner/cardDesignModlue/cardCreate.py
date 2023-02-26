@@ -11,11 +11,12 @@ pageBeginNum = [1, 63]
 class CardCreate:
     def __init__(self, idDigits: int, selNumberList: list, optNumOfSelQList: list,
                  fillNumberList: list, subNumberList: list, subChNumberList: list, cardTitle: str, warnMsg: str):
-
-        with open("../doc/optNumOfSelQList", 'w') as f:
+        print('执行0')
+        with open("../doc/optNumOfSelQList.txt", 'w') as f:
+            print('没执行')
             for i in optNumOfSelQList:
                 f.write(str(i)+'\n')
-
+        print('执行0')
         # 选择题和填空题的分割位置
         self.partition1 = 0
         # 填空题和大题分割位置
@@ -185,7 +186,7 @@ class CardCreate:
                 colOffset = 0
         self.partition1 = rowPtr + 1
         print(cors)
-        with open("../doc/cors", 'w') as f:
+        with open("../../doc/cors", 'w') as f:
             for i in cors:
                 f.write(str(i[0])+' '+str(i[1]) +'\n')
     # 填充填空题

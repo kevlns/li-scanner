@@ -1,8 +1,21 @@
-import sys
-from PyQt5 import QtWidgets
-from li_scanner.li_scanner.CardDesign import CardDesign
+# alist = [0,1,2,3,4,5,6,7,8,89,100]
+#
 
-app = QtWidgets.QApplication(sys.argv)
-ui = CardDesign()
-ui.show()
-sys.exit(app.exec_())
+
+f = open("data1.txt", "r")
+lines = f.readlines()
+cors = []
+for i in range(len(lines)):
+    tmp = lines[i].strip('\n').split(' ')
+    cors.append([int(tmp[0]), int(tmp[1])])  # 删除\n
+print(lines)
+print(cors)
+
+# cors = [[16, 3], [17, 3], [18, 3], [19, 3], [20, 3], [16, 8], [17, 8], [18, 8], [19, 8], [20, 8], [16, 13], [17, 13]
+#     , [18, 13], [19, 13], [20, 13], [16, 18], [17, 18], [18, 18], [19, 18], [20, 18], [22, 3], [23, 3], [24, 3]
+#     , [25, 3], [26, 3], [22, 8], [23, 8], [24, 8], [25, 8], [26, 8], [22, 13], [23, 13], [24, 13], [25, 13]
+#     , [26, 13], [28, 3], [29, 3], [30, 3], [31, 3], [32, 3]]
+
+# with open("data1.txt", 'w') as f:
+#     for i in cors:
+#         f.write(str(i[0])+' '+str(i[1]) +'\n')

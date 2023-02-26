@@ -11,6 +11,11 @@ pageBeginNum = [1, 63]
 class CardCreate:
     def __init__(self, idDigits: int, selNumberList: list, optNumOfSelQList: list,
                  fillNumberList: list, subNumberList: list, subChNumberList: list, cardTitle: str, warnMsg: str):
+
+        with open("../doc/optNumOfSelQList", 'w') as f:
+            for i in optNumOfSelQList:
+                f.write(str(i)+'\n')
+
         # 选择题和填空题的分割位置
         self.partition1 = 0
         # 填空题和大题分割位置
@@ -113,6 +118,7 @@ class CardCreate:
 
     # 填充选择题函数
     def fillSelQuestion(self):
+        cors = []
         # 选择题开始行数
         selBeginRow = 16
         # 选择题开始列数
@@ -148,6 +154,7 @@ class CardCreate:
             # 填充题号
             # print('rowPtr: ', rowPtr, 'colPtr: ', colPtr, 'i: ', i)
             self.sht.range(rowPtr, colPtr).value = self.selNumberList[i]
+            cors.append([rowPtr, colPtr])
             # 垂直点
             self.sht.range(rowPtr, 2).value = '▍'
             self.sht.range(rowPtr, 2).api.Font.Size = 10
@@ -177,7 +184,10 @@ class CardCreate:
                 # print('colOffset: ', colOffset)
                 colOffset = 0
         self.partition1 = rowPtr + 1
-
+        print(cors)
+        with open("../doc/cors", 'w') as f:
+            for i in cors:
+                f.write(str(i[0])+' '+str(i[1]) +'\n')
     # 填充填空题
     def fillFillQuestion(self):
         print('partition1 :', self.partition1)

@@ -5,7 +5,7 @@ from imutils.perspective import four_point_transform
 from scipy.stats import t
 
 
-def findRectangles(img, contours_sort_with_Area):
+def findRectangles(img, contours_sort_with_Area, threshold=0.1):
     # 所有矩形
     recs = []
     # 矩形的角点
@@ -16,7 +16,7 @@ def findRectangles(img, contours_sort_with_Area):
     # 遍历所有轮廓
     for c in contours_sort_with_Area:
         # 获取周长
-        peri = 0.1 * cv.arcLength(c, True)
+        peri = threshold * cv.arcLength(c, True)
         # 获取近似矩形
         approx = cv.approxPolyDP(c, peri, True)
         # 如果是矩形(有四个点)
@@ -27,35 +27,6 @@ def findRectangles(img, contours_sort_with_Area):
             recs.append(recCnt)
             recsCornerPoints.append(approx.reshape(4, 2))
             recsIdx.append(i)
-            # cv.imshow('轮廓'+str(i), recCnt)
-        i = i + 1
-    # 返回矩形,矩形的四个角点,矩形在所有轮廓中的索引
-    return recs, recsCornerPoints, recsIdx
-
-
-def findRectangles2(img, contours_sort_with_Area):
-    # 所有矩形
-    recs = []
-    # 矩形的角点
-    recsCornerPoints = []
-    # 矩形轮廓在所有轮廓中的索引
-    recsIdx = []
-    i = 0
-    # 遍历所有轮廓
-    for c in contours_sort_with_Area:
-        # 获取周长
-        peri = 0.07 * cv.arcLength(c, True)
-        # 获取近似矩形
-        approx = cv.approxPolyDP(c, peri, True)
-        # 如果是矩形(有四个点)
-        if len(approx) == 4:
-            # 透视变换
-            recCnt = four_point_transform(img, approx.reshape(4, 2))
-            # print('type:',type(approx.reshape(4, 2)))
-            recs.append(recCnt)
-            recsCornerPoints.append(approx.reshape(4, 2))
-            recsIdx.append(i)
-            # cv.imshow('轮廓'+str(i), recCnt)
         i = i + 1
     # 返回矩形,矩形的四个角点,矩形在所有轮廓中的索引
     return recs, recsCornerPoints, recsIdx
@@ -67,23 +38,28 @@ def get_complete_card(img):
     img = np.rot90(img)
     # 转成灰度图
     gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    # blur0 = cv.blur(gray, (5, 5))
+
+    blur0 = cv.medianBlur(gray, 3)
     # 二值化
-    ret, th1 = cv.threshold(gray, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+    ret, th1 = cv.threshold(blur0, 100, 255, cv.THRESH_BINARY)
+    # th1 = cv.adaptiveThreshold(blur0,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY_INV,11,2)
     # 形态学腐蚀
     blur1 = cv.blur(th1, (5, 5))
     # 再次二值化
-    ret, th2 = cv.threshold(blur1, 100, 255, cv.THRESH_BINARY_INV)
-    blur2 = cv.blur(th2, (5, 5))
-    ret, th3 = cv.threshold(blur2, 100, 255, cv.THRESH_BINARY_INV)
-
+    ret, th2 = cv.threshold(blur1, 150, 255, cv.THRESH_BINARY_INV)
+    # th2 = cv.adaptiveThreshold(blur1, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 11, 2)
+    # blur2 = cv.blur(th2, (5, 5))
+    # ret, th3 = cv.threshold(blur2, 100, 255, cv.THRESH_BINARY_INV)
+    # cv.imshow('th3', th1)
     # 返回所有轮廓
-    th3, contours, hierarchy = cv.findContours(th3, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+    th2, contours, hierarchy = cv.findContours(th2, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
     contours_sort_with_Area = sorted(contours, key=cv.contourArea, reverse=True)
     # 获取矩形
-    recs, recsPoints, recsIdx = findRectangles(th3, contours_sort_with_Area)
+    recs, recsPoints, recsIdx = findRectangles(th2, contours_sort_with_Area)
     # print('共有矩形: ', len(recsPoints))
 
-    rgb = cv.cvtColor(th3, cv.COLOR_GRAY2RGB)
+    rgb = cv.cvtColor(th2, cv.COLOR_GRAY2RGB)
 
     # 记录大定位点的坐标
     pointers = []
@@ -104,16 +80,35 @@ def get_complete_card(img):
         h1 = recsPoints_copy[3][1] - recsPoints_copy[0][1]
         h2 = recsPoints_copy[2][1] - recsPoints_copy[1][1]
 
-        # if i == 1 or i == 2 or i == 3 or i == 4:
-        #     print(i, '大定位点的长宽是: ', w1, w2, h1, h2, (w1 + w2) / (h1 + h2), (w1 + w2) * (h1 + h2) / 4)
-        #
-        #         # 用长宽比和最大最小面积筛选定位点
-        if h1 + h2 != 0 and 1.8 > (w1 + w2) / (h1 + h2) > 1.3 and 7000 > (w1 + w2) * (h1 + h2) / 4 > 3500:
+        if i == 0 or i == 1 or i == 2 or i == 3:
+            # print(i, '大定位点的长宽是: ', w1, w2, h1, h2, (w1 + w2) / (h1 + h2), (w1 + w2) * (h1 + h2) / 4)
             pointers.append(recsPoints_copy)
+        # print(i, '大定位点的长宽是: ', w1, w2, h1, h2, (w1 + w2) / (h1 + h2), (w1 + w2) * (h1 + h2) / 4)
+        #
+        #         # 用长宽比和最大最小面积筛选大定位点
+        # if h1 + h2 != 0 and 1.8 > (w1 + w2) / (h1 + h2) > 1.3 and 7000 > (w1 + w2) * (h1 + h2) / 4 > 3500:
 
-    if len(pointers) != 4:
-        print('定位点不完整')
-        return
+    for i in pointers:
+        w1 = i[1][0] - i[0][0]
+        w2 = i[2][0] - i[3][0]
+        h1 = i[3][1] - i[0][1]
+        h2 = i[2][1] - i[1][1]
+        # or not (800 > (w1 + w2) * (h1 + h2) / 4 > 300)
+        if not (2.0 > (w1 + w2) / (h1 + h2) > 1.3) :
+            print('大定位点不完整，请调整角度!!!')
+            return None
+
+    idd = 0
+    cv.rectangle(rgb, (pointers[idd][0][0], pointers[idd][0][1]), (pointers[idd][2][0], pointers[idd][2][1]),
+                 (0, 255, 0), -1)
+    cv.rectangle(rgb, (pointers[1][0][0], pointers[1][0][1]), (pointers[1][2][0], pointers[1][2][1]), (0, 255, 0), -1)
+    cv.rectangle(rgb, (pointers[2][0][0], pointers[2][0][1]), (pointers[2][2][0], pointers[2][2][1]), (0, 255, 0), -1)
+    cv.rectangle(rgb, (pointers[3][0][0], pointers[3][0][1]), (pointers[3][2][0], pointers[3][2][1]), (0, 255, 0), -1)
+
+    # cv.imshow('rgb', rgb)
+    cv.waitKey(0)
+    cv.destroyAllWindows()
+
     # 绘制矩形
     # idx = 4
     # print(recsPoints[1], cv.contourArea(contours_sort_with_Area[recsIdx[1]]))
@@ -140,11 +135,11 @@ def get_complete_card(img):
 
     # 去除大定位点外围之后的答题卡,并且映射成规则矩形
     totalCard = four_point_transform(gray, bigCornerPointers)
-    # cv.drawContours(rgb, contours_sort_with_Area, recsIdx[idx], (255, 0, 0), 3)
+
     return totalCard
 
 
-def grubbs(x,  alpha=0.95):
+def grubbs(x, alpha=0.95):
     if isinstance(x, pd.Series) or isinstance(x, pd.DataFrame):
         x = x.astype('float').values
     elif isinstance(x, list):
@@ -181,36 +176,56 @@ def grubbs(x,  alpha=0.95):
 
 
 def remove_outliers(pointers):
-    area = []
+    # print('筛选之前:', len(pointers))
+    # 根据面积去除异常值
+    # area = []
+    # for i in pointers:
+    #     w1 = i[1][0] - i[0][0]
+    #     w2 = i[2][0] - i[3][0]
+    #     h1 = i[3][1] - i[0][1]
+    #     h2 = i[2][1] - i[1][1]
+    #     area.append(((w1 + w2) * (h1 + h2) / 4))
+    # area, delIdx = grubbs(area, 0.95)
+    # for i in delIdx:
+    #     pointers.pop(i)
+    # print('面积筛选过后', len(pointers))
+    # 根据周长去除异常值
+    peri = []
     for i in pointers:
         w1 = i[1][0] - i[0][0]
         w2 = i[2][0] - i[3][0]
         h1 = i[3][1] - i[0][1]
         h2 = i[2][1] - i[1][1]
-        area.append(((w1 + w2) * (h1 + h2) / 4))
-    area, delIdx = grubbs(area, 0.5)
+        peri.append(((w1 + w2) / 2 + (h1 + h2) / 2))
+    peri, delIdx = grubbs(peri, 0.92)
     for i in delIdx:
         pointers.pop(i)
+    # print('周长筛选过后', len(pointers))
+
     return pointers
 
 
 def get_small_dots(img):
     # 二值化
-    ret, th1 = cv.threshold(img, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+    ret, th1 = cv.threshold(img, 100, 255, cv.THRESH_BINARY)
     # 形态学腐蚀
-    blur1 = cv.blur(th1, (5, 5))
+    blur1 = cv.blur(th1, (3, 3))
     # 再次二值化
-    ret, th2 = cv.threshold(blur1, 100, 255, cv.THRESH_BINARY_INV)
+    ret, th2 = cv.threshold(blur1, 100, 255, cv.THRESH_BINARY)
     blur2 = cv.blur(th2, (5, 5))
 
     # 返回所有轮廓
-    blur2, contours, hierarchy = cv.findContours(blur2, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-
+    blur2, contours, hierarchy = cv.findContours(blur1, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+    # cv.imshow('small', blur1)
     # 按面积大小排序
     contours_sort_with_Area = sorted(contours, key=cv.contourArea, reverse=True)
+    recsPoints = []
+    for cnt in contours_sort_with_Area:
+        x, y, w, h = cv.boundingRect(cnt)
+        recsPoints.append([[x, y], [x + w, y], [x + w, y + h], [x, y + h]])
 
     # 获取矩形
-    recs, recsPoints, recsIdx = findRectangles2(blur2, contours_sort_with_Area)
+    # recs, recsPoints, recsIdx = findRectangles(th2, contours_sort_with_Area, 0.05)
     # print('共有矩形: ', len(recsPoints))
 
     rgb = cv.cvtColor(blur2, cv.COLOR_GRAY2RGB)
@@ -231,11 +246,22 @@ def get_small_dots(img):
         recsPoints_copy.append(t[1] if t[1][0] < t[2][0] else t[2])
         pointers.append(recsPoints_copy)
 
-    # 通过左上角的点获取阈值
-    top_left = sorted(pointers, key=lambda x: x[0][0] + x[0][1])[0]
+    for i in range(1, len(pointers)):
+        cv.rectangle(rgb, (pointers[i][0][0], pointers[i][0][1]), (pointers[i][2][0], pointers[i][2][1]),
+                     (0, 0, 255), -1)
+    # cv.imshow('rgb', rgb)
     # 水平和垂直阈值
-    Threshold_x = top_left[2][0]
-    Threshold_y = top_left[2][1]
+    Threshold_x = 0
+    Threshold_y = 0
+    for i in range(blur1.shape[1]):
+        if blur1[5, i] > 100:
+            Threshold_x = i
+            break
+    for i in range(blur1.shape[0]):
+        if blur1[i, 5] > 100:
+            Threshold_y = i
+            break
+    # print('Threshold_x: ',Threshold_x,'Threshold_y: ',Threshold_y)
     # 水平小定位点
     horizontalDots = []
     # 垂直小定位点
@@ -244,11 +270,12 @@ def get_small_dots(img):
     for i in pointers:
         if i[2][1] < Threshold_y + 5:
             horizontalDots.append(i)
+
     # 用水平坐标筛选垂直定位点
     for i in pointers:
         if i[2][0] < Threshold_x + 5:
             verticalDots.append(i)
-
+    # print('horizontalDots:',len(horizontalDots),'verticalDots',len(verticalDots))
     # 去除异常值
     horizontalDots = remove_outliers(horizontalDots)
     # 根据左上角排序
@@ -267,11 +294,18 @@ def get_small_dots(img):
     for i in verticalDots:
         verticalPointers.append((i[1][1], i[2][1]))
     print('垂直定位点个数: ', len(verticalPointers))
+    if len(verticalPointers) != 25 or len(horizontalPointers) != 20:
+        print('小定位点不完整，请调整角度!!!')
+        return [],[]
     return horizontalPointers, verticalPointers
 
 
 def getStuID(img, idDigits):
     horizontalPointers, verticalPointers = get_small_dots(img)
+    if len(horizontalPointers)==0  or len(verticalPointers) ==0:
+        return None
+    # if len(horizontalPointers) != 20 or len(verticalPointers) != 25:
+    #     return
     # 二值化
     ret, th1 = cv.threshold(img, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
     # 形态学腐蚀
@@ -295,41 +329,65 @@ def getStuID(img, idDigits):
     return stuID
 
 
-def getAnswers(img, optNumOfSelQList):
+def getAnswers(img, optNumOfSelQList, cors):
     horizontalPointers, verticalPointers = get_small_dots(img)
-    # 二值化
+    if len(horizontalPointers) == 0 or len(verticalPointers) == 0:
+        return None
+    y = set()
+    for i in cors:
+        y.add(i[0])
+    if len(y) + 10 != len(verticalPointers):
+        print('请调整角度!!!')
+        return
+
+        # 二值化
     ret, th1 = cv.threshold(img, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
     # 形态学腐蚀
     blur1 = cv.blur(th1, (5, 5))
     # 再次二值化
     ret, th2 = cv.threshold(blur1, 100, 255, cv.THRESH_BINARY_INV)
     blur2 = cv.blur(th2, (5, 5))
-
-    f = open("../test/data1.txt", "r")
-    lines = f.readlines()
-    cors = []
-    for i in range(len(lines)):
-        tmp = lines[i].strip('\n').split(' ')
-        cors.append([int(tmp[0]), int(tmp[1])])  # 删除\n
-
+    # 调整定位点坐标偏移量
     for i in range(len(cors)):
         cors[i][0] = cors[i][0] - 6
         cors[i][1] = cors[i][1] - 3
 
     offset = 0
+    # 答案
     answers = []
+    # for i in range(len(cors)):
+    #     if cors[i][1] == 0 and i > 5 and i % 5 == 0:
+    #         offset = offset - 1
+    #     white_dots = 0
+    #     idx = -1
+    #     for j in range(optNumOfSelQList[i]):
+    #         # print(cors[i][0] + offset,j+cors[i][1])
+    #         pic = blur2[verticalPointers[cors[i][0] + offset][0]:verticalPointers[cors[i][0] + offset][1],
+    #               horizontalPointers[j + cors[i][1]][0]:horizontalPointers[j + cors[i][1]][1]]
+    #         tmp = cv.countNonZero(pic)
+    #         if white_dots < tmp and tmp / (pic.shape[0] * pic.shape[1]) > 0.4:
+    #             white_dots = tmp
+    #             idx = j
+    #             print(tmp / (pic.shape[0] * pic.shape[1]))
+    #     answers.append(idx + 1)
+
     for i in range(len(cors)):
         if cors[i][1] == 0 and i > 5 and i % 5 == 0:
             offset = offset - 1
-        white_dots = 0
-        idx = -1
+        idx = []
         for j in range(optNumOfSelQList[i]):
             # print(cors[i][0] + offset,j+cors[i][1])
             pic = blur2[verticalPointers[cors[i][0] + offset][0]:verticalPointers[cors[i][0] + offset][1],
                   horizontalPointers[j + cors[i][1]][0]:horizontalPointers[j + cors[i][1]][1]]
             tmp = cv.countNonZero(pic)
-            if white_dots < tmp and tmp / (pic.shape[0] * pic.shape[1]) > 0.3:
-                white_dots = tmp
-                idx = j
-        answers.append(idx + 1)
+            if tmp / (pic.shape[0] * pic.shape[1]) > 0.4:
+                idx.append(j + 1)
+
+        answers.append(idx)
+    for i in answers:
+        if len(i) == 0:
+            i.append(0)
+
+    cv.waitKey(0)
+    cv.destroyAllWindows()
     return answers

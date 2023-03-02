@@ -7,7 +7,6 @@ from utils import get_complete_card, getStuID, getAnswers
 def getMsg(img):
     # 获取去除边缘之后的答题卡
     totalCard = get_complete_card(img)
-
     # 获取水平垂直定位点坐标
     # cv.imshow('totalCard',totalCard)
     stuID = getStuID(totalCard, 8)

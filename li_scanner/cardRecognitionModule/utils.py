@@ -106,8 +106,6 @@ def get_complete_card(img):
     cv.rectangle(rgb, (pointers[3][0][0], pointers[3][0][1]), (pointers[3][2][0], pointers[3][2][1]), (0, 255, 0), -1)
 
     # cv.imshow('rgb', rgb)
-    cv.waitKey(0)
-    cv.destroyAllWindows()
 
     # 绘制矩形
     # idx = 4
@@ -197,7 +195,7 @@ def remove_outliers(pointers):
         h1 = i[3][1] - i[0][1]
         h2 = i[2][1] - i[1][1]
         peri.append(((w1 + w2) / 2 + (h1 + h2) / 2))
-    peri, delIdx = grubbs(peri, 0.92)
+    peri, delIdx = grubbs(peri, 0.98)
     for i in delIdx:
         pointers.pop(i)
     # print('周长筛选过后', len(pointers))
@@ -289,11 +287,11 @@ def get_small_dots(img):
     verticalPointers = []
     for i in horizontalDots:
         horizontalPointers.append((i[3][0], i[2][0]))
-    print('水平定位点个数: ', len(horizontalPointers))
+    # print('水平定位点个数: ', len(horizontalPointers))
 
     for i in verticalDots:
         verticalPointers.append((i[1][1], i[2][1]))
-    print('垂直定位点个数: ', len(verticalPointers))
+    # print('垂直定位点个数: ', len(verticalPointers))
     if len(verticalPointers) != 25 or len(horizontalPointers) != 20:
         print('小定位点不完整，请调整角度!!!')
         return [],[]
@@ -318,7 +316,7 @@ def getStuID(img, idDigits):
     for i in range(5, 5 + idDigits):
         white_dots = 0
         idx = 0
-        for j in range(0, 9):
+        for j in range(0, 10):
             pic = blur2[verticalPointers[j][0]:verticalPointers[j][1],
                   horizontalPointers[i][0]:horizontalPointers[i][1]]
             tmp = cv.countNonZero(pic)
@@ -329,13 +327,15 @@ def getStuID(img, idDigits):
     return stuID
 
 
-def getAnswers(img, optNumOfSelQList, cors):
+def getAnswers(img, optNumOfSelQList, originalCors):
+    cors = np.copy(originalCors)
     horizontalPointers, verticalPointers = get_small_dots(img)
     if len(horizontalPointers) == 0 or len(verticalPointers) == 0:
         return None
     y = set()
     for i in cors:
         y.add(i[0])
+    # print('长度',len(y))
     if len(y) + 10 != len(verticalPointers):
         print('请调整角度!!!')
         return
@@ -355,28 +355,13 @@ def getAnswers(img, optNumOfSelQList, cors):
     offset = 0
     # 答案
     answers = []
-    # for i in range(len(cors)):
-    #     if cors[i][1] == 0 and i > 5 and i % 5 == 0:
-    #         offset = offset - 1
-    #     white_dots = 0
-    #     idx = -1
-    #     for j in range(optNumOfSelQList[i]):
-    #         # print(cors[i][0] + offset,j+cors[i][1])
-    #         pic = blur2[verticalPointers[cors[i][0] + offset][0]:verticalPointers[cors[i][0] + offset][1],
-    #               horizontalPointers[j + cors[i][1]][0]:horizontalPointers[j + cors[i][1]][1]]
-    #         tmp = cv.countNonZero(pic)
-    #         if white_dots < tmp and tmp / (pic.shape[0] * pic.shape[1]) > 0.4:
-    #             white_dots = tmp
-    #             idx = j
-    #             print(tmp / (pic.shape[0] * pic.shape[1]))
-    #     answers.append(idx + 1)
 
     for i in range(len(cors)):
         if cors[i][1] == 0 and i > 5 and i % 5 == 0:
             offset = offset - 1
         idx = []
         for j in range(optNumOfSelQList[i]):
-            # print(cors[i][0] + offset,j+cors[i][1])
+            # print('偏移',cors[i][0] + offset,j+cors[i][1])
             pic = blur2[verticalPointers[cors[i][0] + offset][0]:verticalPointers[cors[i][0] + offset][1],
                   horizontalPointers[j + cors[i][1]][0]:horizontalPointers[j + cors[i][1]][1]]
             tmp = cv.countNonZero(pic)
@@ -388,6 +373,6 @@ def getAnswers(img, optNumOfSelQList, cors):
         if len(i) == 0:
             i.append(0)
 
-    cv.waitKey(0)
-    cv.destroyAllWindows()
+    # cv.waitKey(0)
+    # cv.destroyAllWindows()
     return answers

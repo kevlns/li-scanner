@@ -215,4 +215,4 @@ class CardDesign(QWidget):
                 subChNumberList.append(int(self.preForm.item(i + 1, 2).text()))
         idDigits = self.idDigits.value()
         CardCreate(idDigits, selNumberList, optNumOfSelQList,fillNumberList, subNumberList, subChNumberList,title,warnMsg)
-        print('执行1')
+        # print('执行1')

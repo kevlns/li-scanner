@@ -11,12 +11,9 @@ pageBeginNum = [1, 63]
 class CardCreate:
     def __init__(self, idDigits: int, selNumberList: list, optNumOfSelQList: list,
                  fillNumberList: list, subNumberList: list, subChNumberList: list, cardTitle: str, warnMsg: str):
-        print('执行0')
         with open("../doc/optNumOfSelQList.txt", 'w') as f:
-            print('没执行')
             for i in optNumOfSelQList:
-                f.write(str(i)+'\n')
-        print('执行0')
+                f.write(str(i) + '\n')
         # 选择题和填空题的分割位置
         self.partition1 = 0
         # 填空题和大题分割位置
@@ -109,13 +106,13 @@ class CardCreate:
     # 画小定位点函数
     def drawSmallDot(self):
         # 水平点
-        self.sht.range((2, 3), (2, columnNum - 2)).value = '▃'
+        self.sht.range((2, 4), (2, columnNum - 3)).value = '▃'
         self.sht.range((2, 3), (2, columnNum - 2)).api.Font.Size = 14
         self.sht.range((2, 3), (2, columnNum - 2)).api.HorizontalAlignment = -4108
         # 垂直点
-        self.sht.range((3, 2), (13, 2)).value = '▍'
-        self.sht.range((3, 2), (13, 2)).api.Font.Size = 10
-        self.sht.range((3, 2), (13, 2)).api.HorizontalAlignment = -4108
+        self.sht.range((4, 2), (14, 2)).value = '▍'
+        self.sht.range((4, 2), (14, 2)).api.Font.Size = 10
+        self.sht.range((4, 2), (14, 2)).api.HorizontalAlignment = -4108
 
     # 填充选择题函数
     def fillSelQuestion(self):
@@ -185,13 +182,15 @@ class CardCreate:
                 # print('colOffset: ', colOffset)
                 colOffset = 0
         self.partition1 = rowPtr + 1
-        print(cors)
-        with open("../../doc/cors", 'w') as f:
+        # print(cors)
+        with open("../doc/cors", 'w') as f:
             for i in cors:
-                f.write(str(i[0])+' '+str(i[1]) +'\n')
+                f.write(str(i[0]) + ' ' + str(i[1]) + '\n')
+        # print('执行!!!')
+
     # 填充填空题
     def fillFillQuestion(self):
-        print('partition1 :', self.partition1)
+        # print('partition1 :', self.partition1)
         # 文字
         self.sht.range((self.partition1, 4), (self.partition1, 5)).api.Merge()
         self.sht.range((self.partition1, 4)).value = '填空题'
@@ -338,6 +337,8 @@ class CardCreate:
 
     # 填充大题函数
     def fillSubQuestion(self):
+        divLines = []
+        divLines.append(self.partition1)
         offset = 0
         self.partition2 = int(self.partition1 + (int(len(self.fillNumberList)) / 5) * 2 + 4)
         self.sht.range((self.partition2 - 1, 4)).value = '大题'
@@ -353,19 +354,21 @@ class CardCreate:
                     fillContent.append(str(str(self.subNumberList[i]) + '(' + str(j) + ')'))
         # 第一页
         curIdx = 0
-        idx = 0
-        for i in range(int(len(self.subNumberList))):
-            # 不打印此题直接延伸到下一页无偏移
+
+        # 第二页 根据偏移往下延申
+
+        for i in range(len(fillContent)):
             if (self.partition2 + i * 6 == rowNum - 3) or (self.partition2 + i * 6 == rowNum - 4):
                 offset = 0
                 curIdx = i
                 break
-            # 打印完此题再到下一页
             else:
-                self.sht.range((self.partition2 + i * 6, 4)).value = fillContent[idx]
-                idx = idx + 1
+                self.sht.range((self.partition2 + i * 6, 4)).value = fillContent[i]
+                curIdx = curIdx + 1
                 self.sht.range((self.partition2 + i * 6, 4),
                                (self.partition2 + i * 6, columnNum - 3)).api.Borders(8).LineStyle = 1
+
+                divLines.append(self.partition2 + i * 6)
                 if (self.partition2 + i * 6 == rowNum - 5) or (self.partition2 + i * 6 == rowNum - 6):
                     offset = rowNum - (self.partition2 + i * 6) - 2
                     curIdx = i + 1
@@ -374,11 +377,24 @@ class CardCreate:
                     offset = 0
                     curIdx = i + 1
                     break
-
-        # 第二页 根据偏移往下延申
-        for i in range(0, len(fillContent) - curIdx):
-            self.sht.range((i * 6 + pageBeginNum[1] + offset + 3, 4)).value = fillContent[idx]
-            idx = idx + 1
+                if curIdx >= len(fillContent):
+                    self.sht.range((self.partition2 + curIdx * 6, 4),
+                                   (self.partition2 + curIdx * 6, columnNum - 3)).api.Borders(8).LineStyle = 1
+                    divLines.append(self.partition2 + curIdx * 6)
+        tmp = len(fillContent) - curIdx
+        for i in range(0, tmp):
+            self.sht.range((i * 6 + pageBeginNum[1] + offset + 3, 4)).value = fillContent[i]
+            divLines.append(i * 6 + pageBeginNum[1] + offset + 3)
             self.sht.range((i * 6 + pageBeginNum[1] + offset + 3, 4),
                            (i * 6 + pageBeginNum[1] + offset + 3, columnNum - 3)).api.Borders(
                 8).LineStyle = 1
+
+        self.sht.range((tmp * 6 + pageBeginNum[1] + offset + 3, 4),
+                       (tmp * 6 + pageBeginNum[1] + offset + 3, columnNum - 3)).api.Borders(
+            8).LineStyle = 1
+        if tmp * 6 + pageBeginNum[1] + offset + 3 != pageBeginNum[1] + 3:
+            divLines.append(tmp * 6 + pageBeginNum[1] + offset + 3)
+        # print(divLines)
+        with open("../doc/divLines", 'w') as f:
+            for i in divLines:
+                f.write(str(i) + '\n')

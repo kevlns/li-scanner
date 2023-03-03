@@ -94,7 +94,7 @@ def get_complete_card(img):
         h1 = i[3][1] - i[0][1]
         h2 = i[2][1] - i[1][1]
         # or not (800 > (w1 + w2) * (h1 + h2) / 4 > 300)
-        if not (2.0 > (w1 + w2) / (h1 + h2) > 1.3) :
+        if not (2.0 > (w1 + w2) / (h1 + h2) > 1.3):
             print('大定位点不完整，请调整角度!!!')
             return None
 
@@ -195,7 +195,7 @@ def remove_outliers(pointers):
         h1 = i[3][1] - i[0][1]
         h2 = i[2][1] - i[1][1]
         peri.append(((w1 + w2) / 2 + (h1 + h2) / 2))
-    peri, delIdx = grubbs(peri, 0.98)
+    peri, delIdx = grubbs(peri, 0.97)
     for i in delIdx:
         pointers.pop(i)
     # print('周长筛选过后', len(pointers))
@@ -291,16 +291,16 @@ def get_small_dots(img):
 
     for i in verticalDots:
         verticalPointers.append((i[1][1], i[2][1]))
-    # print('垂直定位点个数: ', len(verticalPointers))
-    if len(verticalPointers) != 25 or len(horizontalPointers) != 20:
+    # print('垂直定位点个数: ', len(verticalPointers), ' 水平定位点个数: ', len(horizontalPointers))
+    if len(verticalPointers) != 16 or len(horizontalPointers) != 20:
         print('小定位点不完整，请调整角度!!!')
-        return [],[]
+        return [], []
     return horizontalPointers, verticalPointers
 
 
 def getStuID(img, idDigits):
     horizontalPointers, verticalPointers = get_small_dots(img)
-    if len(horizontalPointers)==0  or len(verticalPointers) ==0:
+    if len(horizontalPointers) == 0 or len(verticalPointers) == 0:
         return None
     # if len(horizontalPointers) != 20 or len(verticalPointers) != 25:
     #     return
@@ -316,13 +316,13 @@ def getStuID(img, idDigits):
     for i in range(5, 5 + idDigits):
         white_dots = 0
         idx = 0
-        for j in range(0, 10):
+        for j in range(0 + 1, 10 + 1):
             pic = blur2[verticalPointers[j][0]:verticalPointers[j][1],
                   horizontalPointers[i][0]:horizontalPointers[i][1]]
             tmp = cv.countNonZero(pic)
             if white_dots < tmp:
                 white_dots = tmp
-                idx = j
+                idx = j - 1
         stuID.append(idx)
     return stuID
 
@@ -336,7 +336,7 @@ def getAnswers(img, optNumOfSelQList, originalCors):
     for i in cors:
         y.add(i[0])
     # print('长度',len(y))
-    if len(y) + 10 != len(verticalPointers):
+    if len(y) + 10 + 1 != len(verticalPointers):
         print('请调整角度!!!')
         return
 
@@ -349,7 +349,7 @@ def getAnswers(img, optNumOfSelQList, originalCors):
     blur2 = cv.blur(th2, (5, 5))
     # 调整定位点坐标偏移量
     for i in range(len(cors)):
-        cors[i][0] = cors[i][0] - 6
+        cors[i][0] = cors[i][0] - 5
         cors[i][1] = cors[i][1] - 3
 
     offset = 0
@@ -360,6 +360,7 @@ def getAnswers(img, optNumOfSelQList, originalCors):
         if cors[i][1] == 0 and i > 5 and i % 5 == 0:
             offset = offset - 1
         idx = []
+        # print('cors: ',cors)
         for j in range(optNumOfSelQList[i]):
             # print('偏移',cors[i][0] + offset,j+cors[i][1])
             pic = blur2[verticalPointers[cors[i][0] + offset][0]:verticalPointers[cors[i][0] + offset][1],
@@ -376,3 +377,120 @@ def getAnswers(img, optNumOfSelQList, originalCors):
     # cv.waitKey(0)
     # cv.destroyAllWindows()
     return answers
+
+
+def SubjectiveSegmentation(img, length):
+    """
+    :param img: 需要处理的图片
+    :param length: (list),每道大题行坐标
+    :return: void
+    """
+
+    # 转灰度图
+    # gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    # cv.imshow("img",img)
+
+    # 局部直方图均衡化
+    clahe_1 = cv.createCLAHE(clipLimit=2.0, tileGridSize=(15, 15))
+    equal = clahe_1.apply(img)
+
+    # 伽马矫正
+    Cimg = equal / 255
+    gamma = 1.5
+    out_1 = np.power(Cimg, gamma)
+    out_1 = out_1 * 255
+    out_1 = out_1.astype(np.uint8)
+    # cv.imshow("out1",out_1)
+
+    # 直方图正规化
+    Maximg = np.max(equal)
+    Minimg = np.min(equal)
+    Omin, Omax = 0, 255
+    a = float(Omax - Omin) / (Maximg - Minimg)
+    b = Omin - a * Minimg
+    enhanced = a * equal + b
+    enhanced = enhanced.astype(np.uint8)
+    gamma_1 = out_1
+
+    # 提取大题边缘
+    Gauss = cv.GaussianBlur(gamma_1, (5, 5), 0)
+    edged = cv.Canny(~Gauss, 100, 255)
+
+    # 获取矩形框
+    contours = cv.findContours(edged, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)[1]
+    rect = []
+    rect_area = []
+    for c in contours:
+        x, y, w, h = cv.boundingRect(c)
+        area = w * h
+        rect_area.append([area, x, x + w, y, y + h])
+        # print("123")
+        # if area > 1000.0:
+        # temp_rect = [x, x + w, y, y + h]
+        # if temp_rect not in rect:
+    # print(rect_area)
+    # 筛选最外面矩形
+    rect_area.sort()
+    # print(rect_area)
+    Max_rect = [rect_area[-1][1], rect_area[-1][2], rect_area[-1][3], rect_area[-1][4]]
+
+    # print(Max_rect)
+    # 切出大题区域
+    img_1 = cv.drawContours(img, contours, -1, (0, 255, 0), 3)
+    # cv.imshow("img1", img_1)
+    img_cut_0 = enhanced[Max_rect[2]:Max_rect[3], Max_rect[0]:Max_rect[1]]
+
+    # 增强图片对比度及亮度
+    enhanced_cut = np.uint8(np.clip((1.2 * img_cut_0 + 20), 0, 255))
+    Cimg = enhanced_cut / 255
+    gamma = 2
+    out_2 = np.power(Cimg, gamma)
+    out_2 = out_2 * 255
+    out_2 = out_2.astype(np.uint8)
+    enhanced_cut = cv.addWeighted(enhanced_cut, 0.65, out_2, 0.45, 0)
+
+    # 将图片放大两倍
+    cut_resize = cv.resize(enhanced_cut, (enhanced_cut.shape[1] * 2,
+                                          enhanced_cut.shape[0] * 2))
+
+    # 计算每道题分割高度
+    total_length = 62 * (length[0] // 62 + 1) - length[0] - 1
+    actural_length = 6 * len(length) + 2
+    temp_length = np.copy(length)
+    if total_length > actural_length:
+        temp_length = np.copy(length)
+        temp_length = list(temp_length)
+        temp_length.append(length[-1] + 6)
+    ever_len = []  # 每道题目长度
+    trans_length = []
+    for row_index in range(0, len(length) - 1):
+        ever_len.append(length[row_index + 1] - length[row_index])
+    ever_len.append(62 * (length[0] // 62 + 1) - length[-1])
+    cr_high, cr_wide = cut_resize.shape
+    for row_length in ever_len:
+        trans_length.append(int(row_length / total_length * cr_high + 0.99))
+
+    # 分割题目
+    present_y = 0
+    pics = []
+    c_para = int(0.025 * cr_high)  # corrected parameter
+    for num_question in range(0, len(length)):
+        q_y1 = 0 if present_y - c_para < 0 else present_y - c_para
+        q_y2 = cr_high if present_y + trans_length[num_question] + c_para > cr_high else \
+            present_y + trans_length[num_question] + c_para
+        # print(q_y1, present_y - c_para, q_y2, present_y + c_para)
+        img_cut_ever = cut_resize[q_y1:q_y2, 0:cr_wide]
+
+        pics.append(img_cut_ever)
+
+        # cv.imshow(f"cut_{num_question}", img_cut_ever)
+
+        present_y += trans_length[num_question]
+
+        # cv.waitKey(0)
+        # cv.destroyAllWindows()
+    if total_length > actural_length:
+        # print (total_length, 6 * len(length) + 2, len(length))
+        return pics[:len(length)]
+
+    return pics

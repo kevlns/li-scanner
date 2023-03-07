@@ -1,7 +1,12 @@
 import os
+import sys
+
 import cv2
 import numpy as np
 import xlwings as xw
+from PyQt5.QtWidgets import QApplication
+
+from li_scanner.cardRecognitionModule.SubjectUI import ZhuguantiUI
 from li_scanner.cardRecognitionModule.utils import getStuID, get_complete_card, getAnswers, SubjectiveSegmentation
 
 # 每题选项个数
@@ -39,20 +44,23 @@ wb.close()
 wb = app.books.add()
 sht = wb.sheets[0]
 
-# print('referenceAnswer',referenceAnswer)
+print('referenceAnswer',referenceAnswer)
 for i in range(len(referenceAnswer)):
-    tmp = list(referenceAnswer[i])
+    if referenceAnswer[i] is not None:
+        tmp = list(referenceAnswer[i])
+    else: tmp = []
     strTmp = ''
     for j in range(len(tmp)):
         strTmp = strTmp + str(ord(tmp[j]) - 65 + 1)
     referenceAnswer[i] = strTmp
 
-capture = cv2.VideoCapture(0)
+
 StuID = []
 cishu = 0
 
 scores = {}
 # detail = []
+capture = cv2.VideoCapture(0)
 while capture.isOpened():
     ret, frame = capture.read()
     if ret:
@@ -71,7 +79,7 @@ while capture.isOpened():
                 else:
                     StuID = tmp
                     cishu = 0
-                if cishu >= 5:
+                if cishu >= 6:
                     cishu = 0
                     sid = ''
                     for i in StuID:
@@ -121,6 +129,11 @@ while capture.isOpened():
             # 存题号
             for i in range(len(scores[keys[0]])):
                 sht.range(1, i + 3).value = str(i + 1)
+
+
+            # 学号分数字典
+            # subScore = sub.total_score
+            # print(subScore)
             # 存答案
             for j in range(len(keys)):
                 # print('referenceAnswer',referenceAnswer)
@@ -132,12 +145,21 @@ while capture.isOpened():
                 sht.range((j + 2, 2)).value = rightAnswers
 
                 # print(scores[keys[j]])
+                # 存选项
                 sht.range((j + 2, 3), (j + 2, 3 + len(scores[keys[j]]))).value = scores[keys[j]]
+
+            cv2.destroyAllWindows()
 
             wb.save(r'../../xlsx/scores.xlsx')
             wb.close()
             app.quit()
-            break
+            # print(keys)
+
+            subapp = QApplication(sys.argv)
+            sub = ZhuguantiUI(keys, len(divLines))
+            sub.show()
+            sys.exit(subapp.exec_())
 
 capture.release()
 cv2.destroyAllWindows()
+

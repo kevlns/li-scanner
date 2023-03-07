@@ -66,9 +66,9 @@ class CardDesign(QWidget):
         self.initRight()
 
         # 纸张大小
-        self.paperSize = QtWidgets.QComboBox(self.leftTop)
-        self.paperSize.setGeometry(QtCore.QRect(130, 20, 87, 22))
-        self.paperSize.setObjectName("paperSize")
+        # self.paperSize = QtWidgets.QComboBox(self.leftTop)
+        # self.paperSize.setGeometry(QtCore.QRect(130, 20, 87, 22))
+        # self.paperSize.setObjectName("paperSize")
         # 答题卡标题
         self.cardTitle = QtWidgets.QLineEdit(self.leftTop)
         self.cardTitle.setGeometry(QtCore.QRect(130, 60, 231, 21))
@@ -177,7 +177,7 @@ class CardDesign(QWidget):
         # 是否有身份证号
         self.haveIdentity.setGeometry(QtCore.QRect(260, 90, 91, 19))
         self.haveIdentity.setObjectName("identity")
-        self.haveIdentity.setText(_translate("Form", "身份证号"))
+        self.haveIdentity.setText(_translate("Form", "学号"))
         # 是否有班级
         self.haveClass.setGeometry(QtCore.QRect(180, 90, 91, 19))
         self.haveClass.setObjectName("haveClass")
@@ -187,7 +187,7 @@ class CardDesign(QWidget):
         self.haveName.setObjectName("haveName")
         self.haveName.setText(_translate("Form", "姓名"))
 
-        self.label.setText(_translate("Form", "纸张大小"))
+        # self.label.setText(_translate("Form", "纸张大小"))
         self.label_2.setText(_translate("Form", "答题卡标题"))
         self.label_4.setText(_translate("Form", "学号位数"))
         self.label_3.setText(_translate("Form", "信息区"))

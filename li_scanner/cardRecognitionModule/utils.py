@@ -94,8 +94,10 @@ def get_complete_card(img):
         h1 = i[3][1] - i[0][1]
         h2 = i[2][1] - i[1][1]
         # or not (800 > (w1 + w2) * (h1 + h2) / 4 > 300)
+        if (h1 + h2) == 0:
+            h1  = 1
         if not (2.0 > (w1 + w2) / (h1 + h2) > 1.3):
-            print('大定位点不完整，请调整角度!!!')
+            # print('大定位点不完整，请调整角度!!!')
             return None
 
     idd = 0
@@ -152,6 +154,8 @@ def grubbs(x, alpha=0.95):
             # 求均值和方差
             mean = np.mean(x)
             std = np.std(x)
+            if std == 0:
+                std = 1
             g_arr = np.abs(x - mean) / std
             # 最有可能是离群值的样本的 index
             g_index = g_arr.argmax()
@@ -293,7 +297,7 @@ def get_small_dots(img):
         verticalPointers.append((i[1][1], i[2][1]))
     # print('垂直定位点个数: ', len(verticalPointers), ' 水平定位点个数: ', len(horizontalPointers))
     if len(verticalPointers) != 16 or len(horizontalPointers) != 20:
-        print('小定位点不完整，请调整角度!!!')
+        # print('小定位点不完整，请调整角度!!!')
         return [], []
     return horizontalPointers, verticalPointers
 
@@ -455,17 +459,16 @@ def SubjectiveSegmentation(img, length):
 
     # 计算每道题分割高度
     total_length = 62 * (length[0] // 62 + 1) - length[0] - 1
-    actural_length = 6 * len(length) + 2
+    Max_length = 6 * len(length) + 2
     temp_length = np.copy(length)
-    if total_length > actural_length:
-        temp_length = np.copy(length)
-        temp_length = list(temp_length)
+    temp_length = list(temp_length)
+    if total_length > Max_length:
         temp_length.append(length[-1] + 6)
     ever_len = []  # 每道题目长度
     trans_length = []
-    for row_index in range(0, len(length) - 1):
-        ever_len.append(length[row_index + 1] - length[row_index])
-    ever_len.append(62 * (length[0] // 62 + 1) - length[-1])
+    for row_index in range(0, len(temp_length) - 1):
+        ever_len.append(temp_length[row_index + 1] - temp_length[row_index])
+    ever_len.append(62 * (temp_length[0] // 62 + 1) - temp_length[-1])
     cr_high, cr_wide = cut_resize.shape
     for row_length in ever_len:
         trans_length.append(int(row_length / total_length * cr_high + 0.99))
@@ -489,8 +492,8 @@ def SubjectiveSegmentation(img, length):
 
         # cv.waitKey(0)
         # cv.destroyAllWindows()
-    if total_length > actural_length:
+    # if total_length > actual_length:
         # print (total_length, 6 * len(length) + 2, len(length))
-        return pics[:len(length)]
+        # return pics[:len(length)]
 
     return pics

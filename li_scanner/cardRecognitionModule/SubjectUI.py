@@ -1,9 +1,11 @@
+# 导出成绩
+# 每题分数记到excel
 import sys
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QDoubleValidator
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QLabel, QHBoxLayout, QVBoxLayout, QLineEdit, \
-    QPushButton, QComboBox
+    QPushButton, QComboBox, QMessageBox
 import xlwings
 
 
@@ -59,7 +61,7 @@ class ZhuguantiUI(QMainWindow):
         hbox_win1_top.addStretch(1)
         hbox_win1_top.addWidget(button_export, 1)
         hbox_win1_top.addSpacing(25)
-        
+
         hbox_win1_middle = QHBoxLayout()
         hbox_win1_middle.addWidget(self.cb_num, 0, Qt.AlignJustify | Qt.AlignCenter)
 
@@ -83,17 +85,24 @@ class ZhuguantiUI(QMainWindow):
 
     # 每道大题批改界面
     def correction(self):
+        # 设置窗口大小
+        self.resize(1000, 618)
+        # 设置窗口标题
+        self.setWindowTitle(f"轻阅-{self.cb_num.currentText()}批改")
+
         # 加载图片
         pixmap = QPixmap(self.path + f"{self.StuID[self.index_ID]}/{self.StuID[self.index_ID]}-{self.num}.jpg")
         self.label_pic.setPixmap(pixmap)
         self.label_pic.setScaledContents(True)
 
-        # 创建图片水平布局
-        hbox_pic = QHBoxLayout()
-        hbox_pic.addStretch(1)
-        hbox_pic.addWidget(self.label_pic)
-        hbox_pic.addStretch(1)
+        # 显示题号
+        label_title = QLabel(self)
+        label_title.setText(self.cb_num.currentText())
+        label_title.setStyleSheet('font-size: 35px; font-weight: bold')
 
+        hbox_win2_top = QHBoxLayout()
+        hbox_win2_top.addSpacing(15)
+        hbox_win2_top.addWidget(label_title, Qt.AlignLeft | Qt.AlignCenter)
 
         # 创建打分及切换其他人答案水平布局
         self.input_score.setFixedWidth(50)
@@ -104,23 +113,51 @@ class ZhuguantiUI(QMainWindow):
         doubleValidator.setNotation(QDoubleValidator.StandardNotation)
         doubleValidator.setDecimals(1)
         self.input_score.setValidator(doubleValidator)
+
         lable_sco = QLabel("得分：")
+        lable_sco.setStyleSheet('font-size: 25px;')
+
+        lable_midright = QLabel("分")  # lable_midright = QLabel(f"分/{该题总分}分")
+        lable_midright.setStyleSheet('font-size: 25px;')
+
+        hbox_win2_midright = QHBoxLayout()
+        hbox_win2_midright.addWidget(self.input_score)
+        hbox_win2_midright.addWidget(lable_midright)
+
+        vbox_win2_midright = QVBoxLayout()
+        vbox_win2_midright.addWidget(lable_sco)
+        vbox_win2_midright.addLayout(hbox_win2_midright)
+
+        # 创建图片水平布局
+        hbox_pic = QHBoxLayout()
+        hbox_pic.addSpacing(20)
+        hbox_pic.addWidget(self.label_pic)
+        hbox_pic.addStretch(1)
+        hbox_pic.addLayout(vbox_win2_midright)
+        hbox_pic.addStretch(1)
+
         last_but = QPushButton("上一张")
         next_but = QPushButton("下一张")
+        # button_return = QPushButton("返回")
         last_but.clicked.connect(self.lastbutClicked)
         next_but.clicked.connect(self.nextbutClicked)
+        # button_return.clicked.connect(self.returnbutClicked)
         hbox_sco = QHBoxLayout()
-        hbox_sco.addWidget(lable_sco)
-        hbox_sco.addWidget(self.input_score)
         hbox_sco.addStretch(1)
+        # hbox_sco.addWidget(button_return)
+        # hbox_sco.addSpacing(10)
         hbox_sco.addWidget(last_but)
+        hbox_sco.addSpacing(10)
         hbox_sco.addWidget(next_but)
 
         vbox = QVBoxLayout()
+        vbox.addSpacing(15)
+        vbox.addLayout(hbox_win2_top)
         vbox.addStretch(1)
         vbox.addLayout(hbox_pic)
-        vbox.addLayout(hbox_sco)
         vbox.addStretch(1)
+        vbox.addLayout(hbox_sco)
+        vbox.addSpacing(15)
 
         mainFrame = QWidget()
         mainFrame.setLayout(vbox)
@@ -165,6 +202,21 @@ class ZhuguantiUI(QMainWindow):
         self.label_pic.setPixmap(pixmap)
         self.label_pic.setScaledContents(True)
         # print(111)
+
+    # def returnbutClicked(self):
+    #     mbox = QMessageBox()  # QMessageBox.question(self, title, text, button, QMessageBox.No)
+    #     mbox.setWindowTitle('返回确认')
+    #     mbox.setText('是否返回题目选择界面？')
+    #     mbox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+    #     but_y = mbox.button(QMessageBox.Yes)
+    #     but_y.setText('确认')
+    #     but_n = mbox.button(QMessageBox.No)
+    #     but_n.setText('取消')
+    #     mbox.exec_()
+    #     if mbox.clickedButton() == but_y:
+    #         pass
+    #     else:
+    #         pass
 
 
 if __name__ == '__main__':

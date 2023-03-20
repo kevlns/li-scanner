@@ -79,6 +79,7 @@ class SubUI(QWidget):
 
     def correction(self):
         self.hide()
+        self.num = self.combobox_num.currentIndex()
         self.main_cor = CorrectionUI(self.StuID, self.num, self.scores, self.total_score)
         # print(self.StuID, self.num)
         self.main_cor.show()

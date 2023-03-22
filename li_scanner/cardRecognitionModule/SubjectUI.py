@@ -1,7 +1,10 @@
 import sys
+
+from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt, QCoreApplication
 from PyQt5.QtGui import QPixmap, QDoubleValidator
-from PyQt5.QtWidgets import QApplication, QWidget, QComboBox, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit
+from PyQt5.QtWidgets import QApplication, QWidget, QComboBox, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, \
+    QMessageBox
 
 
 class SubUI(QWidget):
@@ -107,7 +110,7 @@ class CorrectionUI(QWidget):
         # self.total_score = {}  # 每人大题总分
 
         self.label_pic = QLabel()  # 图片显示
-        self.lineedit_score = QLineEdit()   # 分数输入框
+        self.lineedit_score = QLineEdit()  # 分数输入框
 
         self.initUI()
 
@@ -185,6 +188,7 @@ class CorrectionUI(QWidget):
         self.total_score[self.StuID[self.index_ID]] -= self.scores[self.StuID[self.index_ID]][self.sub_num]
         if self.index_ID < 0:
             self.index_ID = 0
+            messagebox_last = QMessageBox.information(QWidget(), "提示", "已是最后一份", QMessageBox.Ok)
         else:
             self.lineedit_score.setText(str(self.scores[self.StuID[self.index_ID]][self.sub_num]))  # 显示分数
         pixmap = QPixmap(self.path + f"{self.StuID[self.index_ID]}/{self.StuID[self.index_ID]}-{self.sub_num}.jpg")
@@ -203,6 +207,7 @@ class CorrectionUI(QWidget):
         # 若已经是最后一张，则无变化
         if self.index_ID >= len(self.StuID):
             self.index_ID = len(self.StuID) - 1
+            messagebox_next = QMessageBox.information(QWidget(), "提示", "已是最后一份", QMessageBox.Ok)
         else:
             self.lineedit_score.clear()  # 清空输入框
 
@@ -210,8 +215,18 @@ class CorrectionUI(QWidget):
         self.label_pic.setPixmap(pixmap)
         self.label_pic.setScaledContents(True)
 
-        if self.scores[self.StuID[self.index_ID]][self.sub_num] != 0:   # 若成绩不为零，显示成绩
+        if self.scores[self.StuID[self.index_ID]][self.sub_num] != 0:  # 若成绩不为零，显示成绩
             self.lineedit_score.setText(str(self.scores[self.StuID[self.index_ID]][self.sub_num]))
+
+    def closeEvent(self, event):
+        reply = QMessageBox(QMessageBox.Question, self.tr("提示"),
+                            self.tr("确认关闭？"), QtWidgets.QMessageBox.NoButton, self)
+        button_close = reply.addButton(self.tr("关闭"), QtWidgets.QMessageBox.YesRole)
+        reply.addButton(self.tr("取消"), QtWidgets.QMessageBox.NoRole)
+        reply.exec_()
+        if reply.clickedButton() == button_close:
+            event.accept()
+            QtWidgets.qApp.quit()
 
 
 if __name__ == '__main__':

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import time
+
 import xlwings as xw
 
 # 一页包含的行数和列数
@@ -39,6 +41,7 @@ class CardCreate:
         app.screen_updating = True  # 更新显示工作表的内容。默认为 True。关闭它也可以提升运行速度。
         # 工作溥
         wb = app.books.add()
+        # time.sleep(10)
         self.sht = wb.sheets.active
         # 获取工作表
         # 设置整个表格列宽
@@ -398,3 +401,6 @@ class CardCreate:
         with open("../doc/divLines", 'w') as f:
             for i in divLines:
                 f.write(str(i) + '\n')
+
+        with open("../doc/idDigits", 'w') as f:
+            f.write(str(self.idDigits))

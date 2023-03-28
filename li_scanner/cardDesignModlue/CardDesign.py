@@ -1,8 +1,16 @@
 # -*- coding: utf-8 -*-
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QTableWidgetItem
+import os.path
+import time
 
-from li_scanner.cardDesignModlue.addQuestions import ObjectiveQuestions
+import cv2
+import fitz
+import numpy as np
+import openpyxl as pyxl
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QTableWidgetItem
+from win32com.client import DispatchEx
+
+from li_scanner.cardDesignModlue.addQuestions import CustomizeTitleInformation
 from li_scanner.cardDesignModlue.cardCreate import CardCreate
 
 
@@ -20,7 +28,7 @@ def delOneHeader(form: QtWidgets.QTableWidget):
 class CardDesign(QWidget):
     def __init__(self):
         super().__init__()
-        self.resize(750, 712)
+        self.resize(1200, 712)
         # 布局
         # 左
         self.left = QtWidgets.QFrame(self)
@@ -40,8 +48,10 @@ class CardDesign(QWidget):
         self.leftBottom.setFrameShadow(QtWidgets.QFrame.Raised)
         self.leftBottom.setObjectName("leftBottom")
         # 右
+        # 答题卡设计
+
         self.right = QtWidgets.QFrame(self)
-        self.right.setGeometry(QtCore.QRect(430, 10, 300, 800))
+        self.right.setGeometry(QtCore.QRect(430, 10, 750, 800))
         self.right.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.right.setFrameShadow(QtWidgets.QFrame.Raised)
         self.right.setObjectName("right")
@@ -51,7 +61,7 @@ class CardDesign(QWidget):
         hLayout.addWidget(self.right)
 
         # 客观题设计窗口
-        self.objectiveDesignForm = ObjectiveQuestions()
+        self.objectiveDesignForm = CustomizeTitleInformation()
         # 客观题表格
         self.preForm = QtWidgets.QTableWidget(self.right)
         # 控制按钮
@@ -61,6 +71,16 @@ class CardDesign(QWidget):
 
         # 生成答题卡按钮
         self.createCard = QtWidgets.QPushButton(self.leftBottom)
+
+        # 预览答题卡标签
+        self.labCardShow = QtWidgets.QLabel(self.right)
+        self.labCardShow.setGeometry(QtCore.QRect(300, 50, 450, 640))
+        self.labCardShow.setObjectName("labCardShow")
+        self.labCardShow.setScaledContents(True)
+
+        self.labtext = QtWidgets.QLabel(self.right)
+        self.labtext.setGeometry(QtCore.QRect(510, 20, 100, 20))
+        self.labtext.setObjectName("labtext")
 
         # 调用表格初始化函数
         self.initRight()
@@ -104,6 +124,7 @@ class CardDesign(QWidget):
         self.label_6 = QtWidgets.QLabel(self.leftBottom)
         self.label_6.setGeometry(QtCore.QRect(10, 130, 91, 16))
         self.label_6.setObjectName("label_6")
+
         # 分割线
         self.line = QtWidgets.QFrame(self.leftBottom)
         self.line.setGeometry(QtCore.QRect(10, -10, 341, 31))
@@ -116,6 +137,8 @@ class CardDesign(QWidget):
 
     def initRight(self):
         _translate = QtCore.QCoreApplication.translate
+        # 预览答题卡标签
+        # self.labCardShow.setText(_translate("Form", "答题卡预览"))
         # 客观题按钮
         self.objEnter.setGeometry(QtCore.QRect(10, 20, 87, 28))
         self.objDelete.setGeometry(QtCore.QRect(110, 20, 87, 28))
@@ -125,6 +148,7 @@ class CardDesign(QWidget):
         # 打开批量添加客观题
         self.enterObjectiveDesign.setGeometry(QtCore.QRect(10, 55, 120, 28))
         self.enterObjectiveDesign.setText(_translate("right", "批量添加"))
+        self.labtext.setText(_translate("right", "预览答题卡"))
 
         # 连接按钮与函数
         self.objEnter.clicked.connect(lambda: insertQuestionsMessage(self.preForm))
@@ -169,6 +193,7 @@ class CardDesign(QWidget):
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "答题卡设计"))
+
         # 生成答题卡按钮
         self.createCard.setGeometry(QtCore.QRect(10, 300, 100, 40))
         self.createCard.setText(_translate("leftBottom", "生成答题卡"))
@@ -214,5 +239,64 @@ class CardDesign(QWidget):
                 subNumberList.append(int(self.preForm.item(i + 1, 0).text()))
                 subChNumberList.append(int(self.preForm.item(i + 1, 2).text()))
         idDigits = self.idDigits.value()
-        CardCreate(idDigits, selNumberList, optNumOfSelQList,fillNumberList, subNumberList, subChNumberList,title,warnMsg)
-        # print('执行1')
+        CardCreate(idDigits, selNumberList, optNumOfSelQList, fillNumberList, subNumberList, subChNumberList, title,
+                   warnMsg)
+        self.showImg()
+
+    def showImg(self):
+        excel_path = 'E:/wenjian/anaconda3_project/li-scanner/card/card_template.xlsx'
+        pdf_path = 'E:/wenjian/anaconda3_project/li-scanner/card/card_template.pdf'
+
+        # 设置打印设置
+        wb = pyxl.load_workbook(excel_path)  # 获取表格文件
+        sht = wb.active
+        sht.print_area = 'A1:Z62'
+
+        # 英寸和厘米换算
+        # 页边距
+        sht.page_margins.left = 1 / 2.54
+        sht.page_margins.right = 1 / 2.54
+        sht.page_margins.top = 1 / 2.54
+        sht.page_margins.bottom = 1 / 2.54
+        # 页眉距，页脚距
+        sht.page_margins.header = 0.8 / 2.54
+        sht.page_margins.header = 0.8 / 2.54
+
+        wb.save(excel_path)
+        xlApp = DispatchEx("Excel.Application")
+        xlApp.Visible = False
+        xlApp.DisplayAlerts = 0
+        if os.path.exists(pdf_path):
+            os.remove(pdf_path)
+        books = xlApp.Workbooks.Open(excel_path, False)
+        books.ExportAsFixedFormat(0, pdf_path)
+        books.Close(False)
+        xlApp.Quit()
+
+        # 展示图片
+        img = self.pyMuPDF_fitz(pdf_path)
+        # cv2.imshow('ggg', img)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = QtGui.QImage(img.data, img.shape[1], img.shape[0], img.shape[1] * img.shape[2],
+                           QtGui.QImage.Format_RGB888)
+        # cv2.imshow('g2', img)
+        # cv2.waitKey(0)
+        self.labCardShow.setPixmap(QtGui.QPixmap(img))
+
+    def pyMuPDF_fitz(self, pdfPath):
+        pdfDoc = fitz.open(pdfPath)
+        for pg in range(pdfDoc.pageCount):
+            page = pdfDoc[pg]
+            rotate = int(0)
+            # 每个尺寸的缩放系数为1.3，这将为我们生成分辨率提高2.6的图像。
+            # 此处若是不做设置，默认图片大小为：792X612, dpi=96
+            zoom_x = 1.33333333  # (1.33333333-->1056x816)   (2-->1584x1224)
+            zoom_y = 1.33333333
+            mat = fitz.Matrix(zoom_x, zoom_y).preRotate(rotate)
+            pix = page.getPixmap(matrix=mat, alpha=False)
+
+            getpngdata = pix.getImageData(output="png")
+            # 解码为 np.uint8
+            image_array = np.frombuffer(getpngdata, dtype=np.uint8)
+            img_cv = cv2.imdecode(image_array, cv2.IMREAD_ANYCOLOR)
+            return img_cv

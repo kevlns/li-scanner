@@ -1,6 +1,11 @@
 PyQt5~=5.10.1
 qrcode==7.3.1
 xlwings==0.24.7
-
 numpy~=1.19.5
 opencv-python~=3.4.0.12
+openpyxl~=3.1.2
+fitz~=0.0.1.dev2
+pandas~=1.1.5
+imutils~=0.5.4
+scipy~=1.5.4
+matplotlib~=3.3.4

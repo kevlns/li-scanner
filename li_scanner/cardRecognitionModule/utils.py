@@ -33,6 +33,11 @@ def findRectangles(img, contours_sort_with_Area, threshold=0.1):
 
 
 def get_complete_card(img):
+    """
+    获取根据大定位点切割后图像
+    :param img: 输入RGB图像
+    :return: 根据大定位点切割后的灰度图像
+    """
     # 旋转90度
     # img = np.rot90(img, k=-1)
     img = np.rot90(img)
@@ -140,6 +145,12 @@ def get_complete_card(img):
 
 
 def grubbs(x, alpha=0.95):
+    """
+    去除离群值函数
+    :param x: 待筛选的列表
+    :param alpha: 该参数越小，筛选效果越明显
+    :return: 删除离群值之后的列表，被删除元素在原列表中的索引
+    """
     if isinstance(x, pd.Series) or isinstance(x, pd.DataFrame):
         x = x.astype('float').values
     elif isinstance(x, list):
@@ -178,6 +189,11 @@ def grubbs(x, alpha=0.95):
 
 
 def remove_outliers(pointers):
+    """
+    筛选定位点
+    :param pointers: 待筛选的定位点列表
+    :return: 筛选之后的定位点
+    """
     # print('筛选之前:', len(pointers))
     # 根据面积去除异常值
     # area = []
@@ -208,6 +224,11 @@ def remove_outliers(pointers):
 
 
 def get_small_dots(img):
+    """
+    获取小的定位点
+    :param img: 根据大定位点切割后的灰度图
+    :return: 水平定位点，垂直定位点
+    """
     # 二值化
     ret, th1 = cv.threshold(img, 100, 255, cv.THRESH_BINARY)
     # 形态学腐蚀
@@ -303,6 +324,12 @@ def get_small_dots(img):
 
 
 def getStuID(img, idDigits):
+    """
+    获取学号
+    :param img: 根据大定位点切割后的灰度图
+    :param idDigits: 学号位数
+    :return: 学号列表
+    """
     horizontalPointers, verticalPointers = get_small_dots(img)
     if len(horizontalPointers) == 0 or len(verticalPointers) == 0:
         return None
@@ -332,6 +359,13 @@ def getStuID(img, idDigits):
 
 
 def getAnswers(img, optNumOfSelQList, originalCors):
+    """
+    获取答案
+    :param img: 根据大定位点切割后的灰度图
+    :param optNumOfSelQList: 每道题的选项个数
+    :param originalCors: 选择题题的坐标
+    :return: 返回答案列表
+    """
     cors = np.copy(originalCors)
     horizontalPointers, verticalPointers = get_small_dots(img)
     if len(horizontalPointers) == 0 or len(verticalPointers) == 0:
@@ -339,9 +373,9 @@ def getAnswers(img, optNumOfSelQList, originalCors):
     y = set()
     for i in cors:
         y.add(i[0])
-    # print('长度',len(y))
+    # print('长度',len(y),len(verticalPointers))
     if len(y) + 10 + 1 != len(verticalPointers):
-        print('请调整角度!!!')
+        # print('请调整角度!!!')
         return
 
         # 二值化

@@ -9,7 +9,7 @@ def getMsg(img):
     totalCard = get_complete_card(img)
 
     # 获取水平垂直定位点坐标
-    cv.imshow('totalCard',totalCard)
+    cv.imshow('totalCard', totalCard)
     # stuID = getStuID(totalCard, 8)
     #
     # print('学号: ', stuID)
@@ -43,5 +43,6 @@ def getMsg(img):
     cv.destroyAllWindows()
 
 
-img = cv.imread('../card/card_with_QRcode/test12.jpg')
-getMsg(img)
+if __name__ == '__main__':
+    img = cv.imread('../card/card_with_QRcode/test12.jpg')
+    getMsg(img)
